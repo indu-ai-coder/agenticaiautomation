@@ -3,7 +3,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
 # Check our tools documentations for more information on how to use them
-from crewai_tools import SerperDevTool, ScrapeWebsiteTool, WebsiteSearchTool, FileReadTool
+from crewai_tools import SerperDevTool, ScrapeWebsiteTool, WebsiteSearchTool, FileReadTool, FileWriterTool
 from pydantic import BaseModel, Field
 
 web_search_tool = WebsiteSearchTool()
@@ -12,6 +12,7 @@ file_read_tool = FileReadTool(
     file_path='job_description_example.md',
     description='A tool to read the job description example file.'
 )
+file_writer_tool = FileWriterTool()
 
 class ResearchRoleRequirements(BaseModel):
     """Research role requirements model"""
@@ -30,23 +31,23 @@ class JobPostingCrew:
         return Agent(
             config=self.agents_config['research_agent'],
             tools=[web_search_tool, seper_dev_tool],
-            verbose=True
+            verbose=False
         )
     
     @agent
     def writer_agent(self) -> Agent:
         return Agent(
             config=self.agents_config['writer_agent'],
-            tools=[web_search_tool, seper_dev_tool, file_read_tool],
-            verbose=True
+            tools=[file_writer_tool],
+            verbose=False
         )
     
     @agent
     def review_agent(self) -> Agent:
         return Agent(
             config=self.agents_config['review_agent'],
-            tools=[web_search_tool, seper_dev_tool, file_read_tool],
-            verbose=True
+            tools=[file_read_tool, file_writer_tool],
+            verbose=False
         )
     
     @task
@@ -76,13 +77,6 @@ class JobPostingCrew:
         return Task(
             config=self.tasks_config['review_and_edit_job_posting_task'],
             agent=self.review_agent()
-        )
-
-    @task
-    def industry_analysis_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['industry_analysis_task'],
-            agent=self.research_agent()
         )
 
     @crew
